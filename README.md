@@ -13,8 +13,6 @@ Antena WiFi casera direccional para 2,4 GHz, hecha con discos de lámina de cobr
 
 Pu-36 es el proyecto del Grupo 2 para el curso de Redes (Universidad, semestre 2026-2). El encargo era construir una antena casera con materiales reciclados o de bajo costo y demostrar con mediciones que funciona.
 
-En la formulación del proyecto la antena se llamó *La Vecina de la Ventana*: la idea era ponerla junto a una ventana y apuntarla hacia un router lejano, para captar señales débiles que la antena que traen los adaptadores no alcanza.
-
 El diseño se tomó del video de KREOSAN sobre un "cañón WiFi" casero (ver [referencias](docs/referencias.md)). De ese video salen las medidas de los discos y las distancias entre ellos.
 
 ## Propósito
