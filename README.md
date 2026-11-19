@@ -25,7 +25,7 @@ La antena se considera funcional si apuntando al router da un RSSI más cercano 
 
 ## Por qué se llama Pu-36
 
-El nombre viene de Marvin el Marciano, el personaje de los Looney Tunes. En los dibujos, Marvin carga un artefacto alienígena con ese nombre, que el grupo recordaba como su pistola. La antena se parece a ese arma de caricatura: un tubo con discos que "dispara" la señal en una sola dirección. Por eso, al publicar el proyecto, *La Vecina de la Ventana* pasó a llamarse **Pu-36**.
+El nombre viene de Marvin el Marciano, el personaje de los Looney Tunes. En los dibujos, Marvin carga un artefacto alienígena con ese nombre, que el grupo recordaba como su pistola. La antena se parece a ese arma de caricatura: un tubo con discos que "dispara" la señal en una sola dirección.
 
 ## Contenido del repositorio
 
@@ -59,4 +59,3 @@ Pu-36/
 | Prueba de referencia (cable pelado contra antena original) | Hecha el 19/11/2026 |
 | Pruebas de distancia y direccionalidad | Pendientes |
 
-Pendiente de confirmar con el docente: para qué es el "cable número 10 tipo alambre" y qué router se usará en el ensayo.
