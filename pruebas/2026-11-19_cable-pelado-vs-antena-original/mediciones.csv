@@ -1,0 +1,11 @@
+fecha,hora,configuracion,equipo,escaneo,red,canal,senal_pct,dbm_aprox,redes_vistas
+2026-11-19,00:21:53,pelado,tl-wn722n,1,red_prueba,1,35,-79,4
+2026-11-19,00:21:55,pelado,tl-wn722n,2,red_prueba,1,35,-79,4
+2026-11-19,00:21:58,pelado,tl-wn722n,3,red_prueba,1,35,-79,4
+2026-11-19,00:22:01,pelado,tl-wn722n,4,red_prueba,1,42,-75,4
+2026-11-19,00:22:04,pelado,tl-wn722n,5,red_prueba,1,42,-75,4
+2026-11-19,00:23:31,original,tl-wn722n,1,red_prueba,1,100,-40,46
+2026-11-19,00:23:34,original,tl-wn722n,2,red_prueba,1,100,-40,56
+2026-11-19,00:23:37,original,tl-wn722n,3,red_prueba,1,100,-40,59
+2026-11-19,00:23:40,original,tl-wn722n,4,red_prueba,1,100,-40,64
+2026-11-19,00:23:43,original,tl-wn722n,5,red_prueba,1,100,-40,68

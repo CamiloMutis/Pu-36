@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pu-36</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: banco de taller — visor 3D grande a la izquierda, lista de piezas en orden de armado a la derecha */
+:root{
+  --bg:#f3f5f4; --paper:#ffffff; --ink:#1d2523; --muted:#5b6965; --line:#c9d2cf;
+  --copper:#b05a24; --copper-soft:#f3e2d6; --cable:#1f6f78; --cable-soft:#d9ecee;
+  --stage:#e6ebe9;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Barlow",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141a19; --paper:#1c2422; --ink:#e4ebe9; --muted:#9aa8a4; --line:#34413e;
+  --copper:#e08a52; --copper-soft:#3a2619; --cable:#5fb8c2; --cable-soft:#16373b; --stage:#1f2826; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141a19; --paper:#1c2422; --ink:#e4ebe9; --muted:#9aa8a4; --line:#34413e;
+  --copper:#e08a52; --copper-soft:#3a2619; --cable:#5fb8c2; --cable-soft:#16373b; --stage:#1f2826; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+.wrap{max-width:1200px;margin:0 auto;padding-block:24px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--copper)}
+h1{font-family:var(--f-display);font-size:clamp(1.9rem,5vw,2.8rem);line-height:1.05;margin:0;text-wrap:balance}
+.lede{color:var(--muted);margin:0;max-width:70ch}
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+@media (max-width:860px){.bench{grid-template-columns:1fr}}
+.viewer{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:6px;overflow:hidden;aspect-ratio:4/3;max-width:100%;min-height:320px}
+.viewer canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.viewer canvas:active{cursor:grabbing}
+.hud{position:absolute;left:10px;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;pointer-events:none}
+.hud>*{pointer-events:auto}
+.ctrl{display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:4px;padding:6px 8px;font-size:.85rem}
+.ctrl label{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.ctrl input[type=range]{width:130px;accent-color:var(--copper)}
+button{font:inherit;font-size:.82rem;border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:3px;padding:4px 9px;cursor:pointer}
+button:hover{border-color:var(--copper)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--copper);outline-offset:2px}
+button[aria-pressed=true]{background:var(--copper-soft);border-color:var(--copper)}
+.hint{position:absolute;top:10px;left:10px;font-family:var(--f-mono);font-size:.7rem;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:3px 7px}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-family:var(--f-mono);font-size:.85rem}
+aside{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px}
+.panel h2{font-family:var(--f-display);font-size:1.3rem;margin:0 0 8px}
+ol.parts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:p}
+ol.parts li{counter-increment:p}
+ol.parts button{width:100%;display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:baseline;text-align:left;border:1px solid transparent;background:none;padding:6px 6px}
+ol.parts button::before{content:counter(p);font-family:var(--f-mono);font-size:.75rem;color:var(--copper)}
+ol.parts button:hover{background:var(--bg);border-color:var(--line)}
+ol.parts button[aria-pressed=true]{background:var(--copper-soft);border-color:var(--copper)}
+.pn{font-weight:600}
+.pd{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.detail h3{font-family:var(--f-display);font-size:1.35rem;margin:0 0 4px}
+.detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:8px 0 0;font-size:.9rem}
+.detail dt{font-family:var(--f-mono);font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-top:2px}
+.detail dd{margin:0}
+.detail p{margin:8px 0 0;font-size:.92rem}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+th,td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+th{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.k{font-family:var(--f-mono);font-weight:600;color:var(--copper)}
+tr:last-child td{border-bottom:0}
+.foot{margin:10px 0 0;font-size:.88rem;color:var(--muted)}
+.steps .eyebrow{display:block;margin-bottom:4px}
+#stepBody p{margin:0 0 6px;font-size:.93rem}
+#stepBody ul{margin:6px 0 0;padding-left:18px;font-size:.92rem;display:flex;flex-direction:column;gap:4px}
+#stepBody .warn{margin-top:8px;padding:6px 10px;border-left:3px solid var(--copper);background:var(--copper-soft);font-size:.88rem;border-radius:0 3px 3px 0}
+.dots{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-wrap:wrap;gap:4px}
+.dots button{width:28px;height:28px;padding:0;font-family:var(--f-mono);font-size:.75rem}
+.dots button.done{background:var(--copper-soft)}
+.stepnav{display:flex;gap:8px;margin-top:12px}
+.stepnav button{flex:1;padding:7px 10px}
+.stepnav button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--copper);border-color:var(--copper);color:var(--paper);font-weight:600}
+button.linkish{margin-top:8px;border:none;background:none;color:var(--cable);padding:0;text-decoration:underline}
+.lbl-lines,.lbls{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.lbl-lines line{stroke:var(--copper);stroke-width:1.5}
+.lbl-lines circle{fill:var(--copper);stroke:var(--paper);stroke-width:1.5}
+.lbl{position:absolute;transform:translate(-50%,-50%);background:var(--paper);border:1.5px solid var(--copper);color:var(--ink);font-family:var(--f-mono);font-size:.7rem;line-height:1.3;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.vers{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.vers button{padding:7px 12px;font-size:.9rem}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:var(--muted)}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--sw)}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow" id="eyebrow">Grupo 2 · Versión 1: adaptador USB TL-WN722N · 2,4 GHz</span>
+  <h1>Pu-36</h1>
+  <p class="lede">Modelo a escala real. Sigue el montaje paso a paso con los botones de la derecha, o gíralo con el mouse o el dedo y toca una pieza para ver su medida y dónde va.</p>
+  <div class="vers" role="group" aria-label="Versión de conexión">
+    <button type="button" data-ver="1" aria-pressed="true">Versión 1 · Adaptador USB (pruebas en casa)</button>
+    <button type="button" data-ver="2" aria-pressed="false">Versión 2 · Router (ensayo con el profe)</button>
+  </div>
+</header>
+
+<div class="bench">
+  <div class="viewer" id="viewer">
+    <div class="loading" id="loading">Cargando el modelo…</div>
+    <span class="hint">Arrastra para girar · rueda o pellizco para zoom</span>
+    <svg class="lbl-lines" id="lblLines" aria-hidden="true"></svg>
+    <div class="lbls" id="lbls"></div>
+    <div class="hud">
+      <div class="ctrl">
+        <label for="explode">Separar</label>
+        <input type="range" id="explode" min="0" max="1" step="0.01" value="0">
+      </div>
+      <div class="ctrl" role="group" aria-label="Vista">
+        <button type="button" data-view="iso">3/4</button>
+        <button type="button" data-view="side">Lado</button>
+        <button type="button" data-view="front">Frente</button>
+        <button type="button" data-view="back">Atrás</button>
+        <button type="button" id="spin" aria-pressed="false">Girar</button>
+        <button type="button" id="xray" aria-pressed="false">Transparente</button>
+        <button type="button" id="tags" aria-pressed="true">Etiquetas</button>
+      </div>
+    </div>
+  </div>
+
+  <aside>
+    <div class="panel steps" aria-live="polite">
+      <span class="eyebrow" id="stepNum">Montaje paso a paso</span>
+      <h2 id="stepTitle">Antena completa</h2>
+      <div id="stepBody"></div>
+      <ol class="dots" id="dots" aria-label="Ir a un paso"></ol>
+      <div class="stepnav">
+        <button type="button" id="prev">← Anterior</button>
+        <button type="button" id="next" class="primary">Empezar →</button>
+      </div>
+      <button type="button" id="all" class="linkish" hidden>Ver antena completa</button>
+    </div>
+    <div class="panel">
+      <h2>Piezas en orden de armado</h2>
+      <ol class="parts" id="parts"></ol>
+    </div>
+    <div class="panel detail" id="detail" aria-live="polite"></div>
+  </aside>
+</div>
+
+<div class="legend">
+  <span style="--sw:#c27a45">Lámina de cobre calibre 30</span>
+  <span style="--sw:#9aa3a0">Varilla y tuercas</span>
+  <span style="--sw:#7a4b2a">Cable coaxial</span>
+  <span style="--sw:#f2f2ee;border:1px solid var(--line)">Base blanca y adaptador TL-WN722N (v1)</span>
+  <span style="--sw:#2b2f30">Router y extensión RP-SMA (v2)</span>
+</div>
+
+<section class="panel">
+  <h2>Medidas en cm</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Disco</th><th>Diámetro</th><th>Radio para el compás</th><th>Separación del anterior</th><th>Posición desde el reflector</th></tr></thead>
+      <tbody>
+        <tr><td>Reflector (plano)</td><td>9 cm</td><td class="k">4,5 cm</td><td>—</td><td class="k">0 cm</td></tr>
+        <tr><td>Parche (elemento activo)</td><td>6,8 cm</td><td class="k">3,4 cm</td><td>1,1 cm</td><td class="k">1,1 cm</td></tr>
+        <tr><td>2.º disco</td><td>5,4 cm</td><td class="k">2,7 cm</td><td>1,2 cm</td><td class="k">2,3 cm</td></tr>
+        <tr><td>Director 1</td><td>3,8 cm</td><td class="k">1,9 cm</td><td>3,2 cm</td><td class="k">5,5 cm</td></tr>
+        <tr><td>Director 2</td><td>3,7 cm</td><td class="k">1,85 cm</td><td>2,8 cm</td><td class="k">8,3 cm</td></tr>
+        <tr><td>Director 3</td><td>3,7 cm</td><td class="k">1,85 cm</td><td>2,8 cm</td><td class="k">11,1 cm</td></tr>
+        <tr><td>Director 4</td><td>3,7 cm</td><td class="k">1,85 cm</td><td>2,8 cm</td><td class="k">13,9 cm</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="foot">Todos los discos: lámina de cobre para repujado, calibre 30 (≈0,25 mm), cortada con tijera. Distancias de cara a cara de los discos. El reflector va plano, sin borde, como en el video. El cable entra a 1 cm del centro.</p>
+</section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const SHEET='Lámina de cobre para repujado, calibre 30 (≈0,25 mm)';
+const PARTS = [
+  {id:'rod', name:'Varilla roscada 1/4"', dim:'≈15 cm', ex:0,
+   info:{Medida:'Ø 0,64 cm (1/4"). Se usan unos 15 cm de la de 50 cm.', Material:'Acero zincado', Cantidad:'1'},
+   note:'Es el eje. Todos los discos se ensartan por su agujero central y se fijan con tuercas.'},
+  {id:'refl', name:'Reflector (disco plano)', dim:'Ø9', ex:0,
+   info:{Medida:'Ø 9 cm, plano, sin borde (como en el video).', Corte:'Círculo de radio 4,5 cm.', Posición:'0 cm (punto de partida)', Agujeros:'Centro: 1/4". Cable: 0,3 cm, a 1 cm del centro.', Material:SHEET},
+   note:'La malla del cable se suelda aquí por detrás: es la tierra. Lija esa zona si la lámina trae barniz. El plano del video muestra una caja con borde de 1,5 cm, pero él la armó plana.'},
+  {id:'pig', name:'Cable de la antena original', dim:'1,5 cm', ex:0,
+   info:{Malla:'0,3 cm, soldada detrás del reflector alrededor del agujero', Aislante:'0,2 cm, cruza el agujero', Vivo:'Alargado con unos 2 cm de alambre de cobre y soldado al parche', Base:'La base blanca con codo tiene RP-SMA macho: se enrosca al adaptador, al router o a la extensión'},
+   note:'Es el cable corto que quedó al desarmar la antena del TL-WN722N. El codo gira, así que el adaptador puede quedar hacia arriba o hacia un lado.'},
+  {id:'patch', name:'Parche (elemento activo)', dim:'Ø6,8', ex:1,
+   info:{Medida:'Ø 6,8 cm (radio 3,4 cm)', Posición:'1,1 cm delante del reflector', Material:SHEET, Soldadura:'Vivo alargado, a 1 cm del centro'},
+   note:'Es el único disco conectado al cable. Lija donde va la soldadura y mide el 1,1 cm con calibrador antes de apretar las tuercas.'},
+  {id:'d54', name:'2.º disco', dim:'Ø5,4', ex:2,
+   info:{Medida:'Ø 5,4 cm (radio 2,7 cm)', Posición:'1,2 cm después del parche (2,3 cm del reflector)', Material:SHEET},
+   note:'Elemento parásito: no lleva soldadura.'},
+  {id:'dir1', name:'Director 1', dim:'Ø3,8', ex:3,
+   info:{Medida:'Ø 3,8 cm (radio 1,9 cm)', Posición:'3,2 cm después del 2.º disco (5,5 cm del reflector)', Material:SHEET},
+   note:'Primer director. Los directores guían la señal hacia el frente.'},
+  {id:'dir2', name:'Director 2', dim:'Ø3,7', ex:4,
+   info:{Medida:'Ø 3,7 cm (radio 1,85 cm)', Posición:'2,8 cm después del director 1 (8,3 cm del reflector)', Material:SHEET}, note:'Igual que los directores 3 y 4.'},
+  {id:'dir3', name:'Director 3', dim:'Ø3,7', ex:5,
+   info:{Medida:'Ø 3,7 cm (radio 1,85 cm)', Posición:'2,8 cm después del director 2 (11,1 cm del reflector)', Material:SHEET}, note:'Igual que los directores 2 y 4.'},
+  {id:'dir4', name:'Director 4', dim:'Ø3,7', ex:6,
+   info:{Medida:'Ø 3,7 cm (radio 1,85 cm)', Posición:'2,8 cm después del director 3 (13,9 cm del reflector)', Material:SHEET}, note:'Último disco. La antena apunta hacia este lado.'},
+  {id:'nuts', name:'Tuercas 1/4"', dim:'×14', ex:0,
+   info:{Cantidad:'2 por disco (14) + 2 de reserva', Llave:'7/16"', Material:'Acero'},
+   note:'Una a cada lado de cada disco lo deja fijo en su posición. Se mueven con su disco al separar.'},
+  {id:'xcable', ver:2, name:'Extensión RP-SMA macho–hembra', dim:'≤1 m', ex:0,
+   info:{Puntas:'Hembra: se enrosca en la base blanca. Macho: se enrosca en el router.', Cable:'Flexible: RG174, RG316 o RG58', Largo:'1 m como máximo (en el modelo está acortado)'},
+   note:'Opcional, pero permite girar la antena 45° sin mover el router. Sin ella, la base blanca se enrosca directo al router.'},
+  {id:'router', ver:2, name:'Router del ensayo', dim:'RP-SMA', ex:0,
+   info:{Requisito:'Antenas desenroscables con conector RP-SMA', Conexión:'Se quita una antena y en ese conector va la Pu-36', Medición:'Desde el celular o portátil: RSSI, velocidad y latencia'},
+   note:'Si el router tiene antenas fijas, toca abrirlo y soldar el coaxial adentro: vivo con vivo, malla con malla. Las demás antenas se dejan puestas, igual en todas las pruebas.'},
+  {id:'usb', ver:1, name:'Adaptador TL-WN722N', dim:'v2/v3', ex:0,
+   info:{Conexión:'RP-SMA en el costado: ahí se enrosca la base blanca', Hacia:'PC, con extensión USB de 2–3 m', Estado:'Probado en el portátil: lo reconoce y recibe señal'},
+   note:'Queda colgando detrás del reflector. La extensión USB es la que permite llevar la antena a la ventana.'}
+];
+
+let ver=1;
+const listEl = document.getElementById('parts');
+const detailEl = document.getElementById('detail');
+PARTS.forEach(p=>{
+  const li=document.createElement('li'); li.dataset.ver=p.ver||'';
+  const b=document.createElement('button'); b.type='button'; b.dataset.id=p.id; b.setAttribute('aria-pressed','false');
+  b.innerHTML='<span class="pn"></span><span class="pd"></span>';
+  b.querySelector('.pn').textContent=p.name; b.querySelector('.pd').textContent=p.dim;
+  b.addEventListener('click',()=>select(selected===p.id?null:p.id));
+  li.appendChild(b); listEl.appendChild(li);
+});
+
+function showDetail(id){
+  const p=PARTS.find(x=>x.id===id);
+  detailEl.textContent='';
+  const h=document.createElement('h3');
+  if(!p){
+    h.textContent='Antena completa';
+    const pp=document.createElement('p');
+    pp.textContent='Siete discos de lámina de cobre calibre 30 sobre una varilla de 1/4". Largo del reflector al último director: unos 14 cm. Toca una pieza en el modelo o en la lista para ver sus medidas.';
+    detailEl.append(h,pp); return;
+  }
+  h.textContent=p.name;
+  const dl=document.createElement('dl');
+  Object.entries(p.info).forEach(([k,v])=>{const dt=document.createElement('dt');dt.textContent=k;const dd=document.createElement('dd');dd.textContent=v;dl.append(dt,dd);});
+  const n=document.createElement('p'); n.textContent=p.note;
+  detailEl.append(h,dl,n);
+}
+showDetail(null);
+
+let selected=null, setHighlight=()=>{}, exitSteps=()=>{};
+function select(id){
+  exitSteps();
+  selected=id;
+  listEl.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===id)));
+  showDetail(id); setHighlight(id);
+}
+
+if(!window.THREE){document.getElementById('loading').textContent='No se pudo cargar el visor 3D. Revisa la conexión y recarga la página.';return;}
+document.getElementById('loading').remove();
+
+const viewer=document.getElementById('viewer');
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding;
+viewer.prepend(renderer.domElement);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(35,4/3,1,5000);
+const controls=new THREE.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true; controls.dampingFactor=0.08;
+
+function readStage(){scene.background=new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--stage').trim()||'#e6ebe9');}
+readStage();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',readStage);
+new MutationObserver(readStage).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x6b6f70,0.85));
+const key=new THREE.DirectionalLight(0xffffff,0.9); key.position.set(-150,200,250); scene.add(key);
+const rim=new THREE.DirectionalLight(0xffffff,0.45); rim.position.set(250,80,-200); scene.add(rim);
+
+const M={
+  copper:()=>new THREE.MeshStandardMaterial({color:0xc27a45,metalness:0.55,roughness:0.38,side:THREE.DoubleSide}),
+  steel:()=>new THREE.MeshStandardMaterial({color:0x9aa3a0,metalness:0.6,roughness:0.45}),
+  coax:()=>new THREE.MeshStandardMaterial({color:0x7a4b2a,metalness:0.1,roughness:0.7}),
+  white:()=>new THREE.MeshStandardMaterial({color:0xf2f2ee,roughness:0.6}),
+  solder:()=>new THREE.MeshStandardMaterial({color:0xd8dcdc,metalness:0.8,roughness:0.25}),
+  dark:()=>new THREE.MeshStandardMaterial({color:0x2b2f30,metalness:0.2,roughness:0.5}),
+};
+const meshesByPart={}; PARTS.forEach(p=>meshesByPart[p.id]=[]);
+function tag(mesh,id){mesh.userData.part=id;meshesByPart[id].push(mesh);return mesh;}
+function cylX(r1,r2,len,seg,mat,open){const g=new THREE.CylinderGeometry(r1,r2,len,seg,1,!!open);g.rotateZ(Math.PI/2);return new THREE.Mesh(g,mat);}
+
+const root=new THREE.Group(); scene.add(root);
+const SPREAD=26;
+
+// Varilla
+const rod=tag(cylX(3.175,3.175,170,24,M.steel()),'rod'); rod.position.x=68; root.add(rod);
+
+// Discos de lámina calibre 30 (0,25 mm) con sus tuercas
+const T=0.25;
+const DISCS=[
+  {id:'refl',x:0,r:45},
+  {id:'patch',x:11,r:34},
+  {id:'d54',x:23,r:27},
+  {id:'dir1',x:55,r:19},
+  {id:'dir2',x:83,r:18.5},
+  {id:'dir3',x:111,r:18.5},
+  {id:'dir4',x:139,r:18.5},
+];
+const groups={};
+const nutMat=M.steel();
+DISCS.forEach(d=>{
+  const g=new THREE.Group(); g.position.x=d.x; g.userData.baseX=d.x; g.userData.ex=PARTS.find(p=>p.id===d.id).ex;
+  const shape=new THREE.Shape(); shape.absarc(0,0,d.r,0,Math.PI*2,false);
+  const hole=new THREE.Path(); hole.absarc(0,0,3.3,0,Math.PI*2,true); shape.holes.push(hole);
+  if(d.id==='refl'){const h2=new THREE.Path(); h2.absarc(0,10,1.5,0,Math.PI*2,true); shape.holes.push(h2);}
+  const geo=new THREE.ExtrudeGeometry(shape,{depth:T,bevelEnabled:false,curveSegments:48});
+  geo.translate(0,0,-T/2); geo.rotateY(Math.PI/2);
+  g.add(tag(new THREE.Mesh(geo,M.copper()),d.id));
+  [-1,1].forEach(s=>{
+    const n=tag(cylX(6.4,6.4,4.5,6,nutMat),'nuts'); n.position.x=s*(T/2+2.25); n.userData.disc=d.id; g.add(n);
+  });
+  groups[d.id]=g; root.add(g);
+});
+
+// Cable corto de la antena original (alimentación a 10 mm del centro)
+const FY=10;
+const feed=new THREE.Group(); root.add(feed);
+const jacket=tag(cylX(1.3,1.3,6,16,M.coax()),'pig'); jacket.position.set(-6.25,FY,0); feed.add(jacket);
+const braid=tag(cylX(1.25,1.25,3,16,M.solder()),'pig'); braid.position.set(-1.75,FY,0); feed.add(braid);
+const solderR=tag(new THREE.Mesh(new THREE.TorusGeometry(1.9,0.7,10,24).rotateY(Math.PI/2),M.solder()),'pig'); solderR.position.set(-0.6,FY,0); feed.add(solderR);
+const diel=tag(cylX(0.75,0.75,2,16,M.white()),'pig'); diel.position.set(0.75,FY,0); feed.add(diel);
+const vivo=tag(cylX(0.3,0.3,2.75,12,M.solder()),'pig'); vivo.position.set(3.125,FY,0); feed.add(vivo);
+const splice=tag(cylX(0.8,0.8,2.5,12,M.solder()),'pig'); splice.position.set(4.75,FY,0); feed.add(splice);
+const ext=tag(cylX(0.5,0.5,1,12,M.copper()),'pig'); feed.add(ext);
+const solderP=tag(new THREE.Mesh(new THREE.SphereGeometry(1.3,16,12),M.solder()),'pig'); feed.add(solderP);
+
+// Base blanca con codo, enroscada al adaptador
+const whiteM=M.white();
+const collar=tag(cylX(5,5,22,24,whiteM),'pig'); collar.position.set(-20.25,FY,0); feed.add(collar);
+[-13,-16.5,-20].forEach(x=>{const r=tag(new THREE.Mesh(new THREE.TorusGeometry(5,0.7,8,24).rotateY(Math.PI/2),whiteM),'pig'); r.position.set(x,FY,0); feed.add(r);});
+const elbowGeo=new THREE.CylinderGeometry(6,6,12,24); elbowGeo.rotateX(Math.PI/2);
+const elbow=tag(new THREE.Mesh(elbowGeo,whiteM),'pig'); elbow.position.set(-37,FY,0); feed.add(elbow);
+const arm=tag(new THREE.Mesh(new THREE.CylinderGeometry(4.6,4.6,14,24),whiteM),'pig'); arm.position.set(-37,FY+13,0); feed.add(arm);
+const knurl=tag(new THREE.Mesh(new THREE.CylinderGeometry(4.6,4.6,9,18),M.steel()),'pig'); knurl.position.set(-37,FY+24.5,0); feed.add(knurl);
+// subgrupos para el paso a paso
+[collar,elbow,arm,knurl].forEach(m=>m.userData.sub='base');
+feed.children.forEach(m=>{ if(m.geometry&&m.geometry.type==='TorusGeometry'&&m!==solderR) m.userData.sub='base'; });
+ext.userData.sub='ext'; splice.userData.sub='ext';
+solderR.userData.sub='solderR'; solderP.userData.sub='solderP';
+
+const box=tag(new THREE.Mesh(new THREE.BoxGeometry(94,27,11),M.white()),'usb'); box.position.set(-69,FY+42.5,0); root.add(box);
+const plug=tag(new THREE.Mesh(new THREE.BoxGeometry(12,12,4.5),M.steel()),'usb'); plug.position.set(-122,FY+42.5,0); root.add(plug);
+
+// Versión 2: router + extensión RP-SMA
+const RX=-200, RY=-80, PX=RX-48;
+const goldM=()=>new THREE.MeshStandardMaterial({color:0xd8b45a,metalness:0.8,roughness:0.3});
+const rBody=tag(new THREE.Mesh(new THREE.BoxGeometry(120,26,170),M.dark()),'router'); rBody.position.set(RX,RY,0); root.add(rBody);
+[-45,-25,-5,15].forEach(z=>{const l=tag(new THREE.Mesh(new THREE.BoxGeometry(1.5,3,6),new THREE.MeshStandardMaterial({color:0x2ecc71,emissive:0x2ecc71,emissiveIntensity:0.8})),'router'); l.position.set(RX+60.5,RY+4,z); root.add(l);});
+[55,-55].forEach(z=>{const p=tag(new THREE.Mesh(new THREE.CylinderGeometry(3.4,3.4,8,16),goldM()),'router'); p.position.set(PX,RY+17,z); root.add(p);});
+const rAntBase=tag(new THREE.Mesh(new THREE.CylinderGeometry(5.5,5.5,10,18),M.dark()),'router'); rAntBase.position.set(PX,RY+26,55); root.add(rAntBase);
+const rAnt=tag(new THREE.Mesh(new THREE.CylinderGeometry(4.5,5,150,18),M.dark()),'router'); rAnt.position.set(PX,RY+31+75,55); root.add(rAnt);
+const xFem=tag(new THREE.Mesh(new THREE.CylinderGeometry(3.8,3.8,9,18),goldM()),'xcable'); xFem.position.set(-37,FY+33.5,0); root.add(xFem);
+const xMale=tag(new THREE.Mesh(new THREE.CylinderGeometry(4.4,4.4,8,6),goldM()),'xcable'); xMale.position.set(PX,RY+25,-55); root.add(xMale);
+const xCurve=new THREE.CatmullRomCurve3([new THREE.Vector3(-37,FY+38,0),new THREE.Vector3(-37,FY+62,0),new THREE.Vector3(-80,FY+78,-15),new THREE.Vector3(-160,FY+30,-45),new THREE.Vector3(PX,RY+65,-55),new THREE.Vector3(PX,RY+29,-55)]);
+const xTube=tag(new THREE.Mesh(new THREE.TubeGeometry(xCurve,80,1.4,10,false),M.dark()),'xcable'); root.add(xTube);
+
+// Resaltado
+const allMeshes=[]; Object.values(meshesByPart).forEach(a=>a.forEach(m=>allMeshes.push(m)));
+// materiales compartidos (tuercas, base blanca): uno por malla para que el resaltado funcione
+allMeshes.forEach(m=>{m.material=m.material.clone();});
+const baseEm=new Map(allMeshes.map(m=>[m,m.material.emissive.getHex()]));
+let xray=false;
+const SEE=['refl','patch','d54','dir1','dir2','dir3','dir4','base','usb','router'];
+function verOK(m){const p=m.userData.part; return ver===1 ? (p!=='router'&&p!=='xcable') : p!=='usb';}
+function applyLook(hi){
+  const thin = stepIdx>=0 || xray;
+  allMeshes.forEach(m=>{
+    const k=keyOf(m), isHi=hi.includes(k);
+    m.material.emissive.setHex(isHi?0x3a1a05:baseEm.get(m));
+    const see = thin && SEE.includes(k);
+    m.material.transparent=see; m.material.opacity=see?(isHi?0.7:0.35):1; m.material.depthWrite=!see;
+  });
+}
+setHighlight=function(id){
+  if(!id){applyLook([]);return;}
+  allMeshes.forEach(m=>{ const on=m.userData.part===id; m.material.emissive.setHex(on?0x3a1a05:baseEm.get(m)); m.material.transparent=!on; m.material.opacity=on?1:0.22; m.material.depthWrite=on; });
+};
+
+// Separar piezas
+const exInput=document.getElementById('explode');
+function applyExplode(t){
+  Object.values(groups).forEach(g=>{g.position.x=g.userData.baseX+t*g.userData.ex*SPREAD+(g.userData.off||0);});
+  const px=groups.patch.position.x;
+  const len=Math.max(0.5,px-T/2-3);
+  ext.scale.x=len; ext.position.set(3+len/2,FY,0);
+  solderP.position.set(px-0.6,FY,0);
+  const rodStart=-8, rodEnd=139+t*6*SPREAD+10;
+  rod.scale.x=(rodEnd-rodStart)/170; rod.position.x=(rodStart+rodEnd)/2;
+}
+exInput.addEventListener('input',()=>applyExplode(+exInput.value));
+applyExplode(0);
+
+// Vistas
+const C=[20,12,0];
+const VIEWS={
+  iso:{p:[-190,140,260],t:C}, side:{p:[20,25,380],t:C}, front:{p:[330,30,60],t:C}, back:{p:[-300,90,110],t:C},
+  cut:{p:[150,40,640],t:[150,10,0]}, refl:{p:[-130,90,150],t:[3,8,0]}, cable:{p:[0,26,38],t:[0,10,0]},
+  feed:{p:[-95,45,85],t:[-2,10,0]}, rod:{p:[-120,90,170],t:[10,5,0]}, patch:{p:[115,55,95],t:[6,8,0]},
+  build:{p:[-110,110,250],t:[50,5,0]}, v2:{p:[-470,140,520],t:[-105,-40,0]}, over1:{p:[235,105,265],t:[35,-8,0]}
+};
+function setView(v){const V=VIEWS[v];camera.position.set(V.p[0],V.p[1],V.p[2]);controls.target.set(V.t[0],V.t[1],V.t[2]);controls.update();}
+setView('iso');
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+const spinBtn=document.getElementById('spin');
+spinBtn.addEventListener('click',()=>{controls.autoRotate=!controls.autoRotate;spinBtn.setAttribute('aria-pressed',String(controls.autoRotate));});
+controls.autoRotateSpeed=1.2;
+if(matchMedia('(prefers-reduced-motion: reduce)').matches) controls.enableDamping=false;
+
+// Clic sobre piezas
+const ray=new THREE.Raycaster(), mouse=new THREE.Vector2(); let down=null;
+renderer.domElement.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+renderer.domElement.addEventListener('pointerup',e=>{
+  if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5) return;
+  const r=renderer.domElement.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(allMeshes,false).filter(h=>h.object.visible);
+  select(hits.length?hits[0].object.userData.part:null);
+});
+
+// Etiquetas sobre el modelo
+const lblLines=document.getElementById('lblLines'), lblsEl=document.getElementById('lbls');
+const SVGNS='http://www.w3.org/2000/svg';
+let activeLabels=[];
+function setLabels(list){
+  lblsEl.textContent=''; while(lblLines.firstChild) lblLines.removeChild(lblLines.firstChild);
+  activeLabels=(list||[]).map(L=>{
+    const d=document.createElement('div'); d.className='lbl'; d.textContent=L.t; lblsEl.appendChild(d);
+    const ln=document.createElementNS(SVGNS,'line'); const c=document.createElementNS(SVGNS,'circle'); c.setAttribute('r','3.5');
+    lblLines.append(ln,c);
+    return {L,d,ln,c,v:new THREE.Vector3(L.p[0],L.p[1],L.p[2])};
+  });
+}
+const _pv=new THREE.Vector3();
+function updateLabels(){
+  if(!activeLabels.length) return;
+  const w=viewer.clientWidth,h=viewer.clientHeight;
+  activeLabels.forEach(a=>{
+    _pv.copy(a.v).project(camera);
+    const x=(_pv.x+1)/2*w, y=(1-_pv.y)/2*h, lx=x+(a.L.dx||0), ly=y+a.L.dy, off=_pv.z>1;
+    a.d.hidden=off; a.ln.style.display=a.c.style.display=off?'none':'';
+    a.d.style.left=lx+'px'; a.d.style.top=ly+'px';
+    a.ln.setAttribute('x1',x); a.ln.setAttribute('y1',y); a.ln.setAttribute('x2',lx); a.ln.setAttribute('y2',ly);
+    a.c.setAttribute('cx',x); a.c.setAttribute('cy',y);
+  });
+}
+
+// Paso a paso
+const DISCS_ALL=['refl','patch','d54','dir1','dir2','dir3','dir4'];
+const s4=['refl','pig','base','ext','solderR'];
+const s5=[...s4,'rod','n-refl'];
+const s6=[...s5,'patch','n-patch','solderP'];
+const s7=[...s6,'d54','n-d54'];
+const s8=[...s7,'dir1','n-dir1'];
+const s9=[...s8,'dir2','n-dir2','dir3','n-dir3','dir4','n-dir4'];
+const STEPS=[
+  {title:'Marca y corta los 7 discos', show:DISCS_ALL, hi:DISCS_ALL, view:'cut', ex:1,
+   text:['Traza con compás sobre la lámina de cobre calibre 30 y corta con tijera.'],
+   list:['Reflector: radio 4,5 cm (plano, sin borde)','Parche: radio 3,4 cm','2.º disco: radio 2,7 cm','Director 1: radio 1,9 cm','Directores 2, 3 y 4: radio 1,85 cm'],
+   warn:'Marca bien el centro de cada disco con un punzón: ahí va el agujero de la varilla.'},
+  {title:'Perfora el reflector', show:['refl'], hi:['refl'], view:'refl',
+   text:['El reflector va plano, sin borde, como lo armó el del video. Aplana bien el disco antes de perforar.'],
+   list:['Agujero central de 1/4" en todos los discos','Reflector: agujero de 0,3 cm a 1 cm del centro, para el cable','Quita rebabas con la lima'],
+   warn:'Perfora con una broca pequeña primero y luego agranda, para que la lámina no se doble.'},
+  {title:'Prepara el cable', show:['pig','base','ext'], hi:['ext'], view:'cable',
+   labels:[
+     {t:'Base blanca', p:[-10.5,5,0], dy:70},
+     {t:'Cubierta', p:[-6.25,11.3,0], dy:-60},
+     {t:'Malla · 0,3 cm → al reflector', p:[-1.75,8.75,0], dy:75, dx:-20},
+     {t:'Aislante · 0,2 cm', p:[0.75,10.75,0], dy:-115},
+     {t:'Vivo', p:[2.6,9.7,0], dy:130},
+     {t:'Empalme con estaño', p:[4.75,10.8,0], dy:-60, dx:20},
+     {t:'Alambre de cobre ≈ 2 cm → al parche', p:[9,9.5,0], dy:75, dx:30}
+   ],
+   text:['El cable corto sale de la base blanca, que se enrosca al adaptador.'],
+   list:['Malla: 0,3 cm, retorcida y sin hilos sueltos','Aislante: 0,2 cm a la vista','Vivo: hilitos retorcidos y estañados','Alárgalo con unos 2 cm de alambre de cobre, traslapado 2–3 mm'],
+   warn:'Prueba: pin central → punta del alambre pita; alambre → malla no pita.'},
+  {title:'Pasa el cable y suelda la malla', show:s4, hi:['solderR','pig'], view:'feed',
+   labels:[
+     {t:'Malla soldada al reflector (por detrás)', p:[-0.6,12.6,0], dy:-70, dx:-40},
+     {t:'Alambre de cobre → al parche', p:[7,10,0], dy:70, dx:40}
+   ],
+   text:['Mete el cable desde atrás por el agujero de 0,3 cm, que está a 1 cm del centro. El alambre de cobre queda saliendo por delante.'],
+   list:['Lija el reflector alrededor del agujero, por detrás','Suelda la malla al reflector en todo su contorno','La malla es la tierra de la antena'],
+   warn:'El estaño de la malla no puede tocar el vivo ni el alambre.'},
+  {title:'Pon la varilla y fija el reflector', show:s5, hi:['rod','n-refl'], view:'rod',
+   text:['Pasa la varilla de 1/4" por el agujero central y aprieta una tuerca a cada lado del reflector.'],
+   list:['Deja asomar por detrás solo lo justo para la tuerca, unos 0,8 cm','El resto de la varilla va hacia adelante, unos 14 cm'],
+   warn:'La base blanca queda muy cerca de la tuerca de atrás. Si chocan, gira el codo hacia el otro lado.'},
+  {title:'Monta el parche y suelda el vivo', show:s6, hi:['patch','n-patch','solderP','ext'], view:'patch',
+   labels:[
+     {t:'Alambre soldado al parche · 1 cm del centro', p:[10.4,10,0], dy:-80},
+     {t:'Parche a 1,1 cm del reflector', p:[11,-34,0], dy:45}
+   ],
+   text:['Enrosca una tuerca, pon el parche y otra tuerca. Déjalo a 1,1 cm del reflector, medido de cara a cara.'],
+   list:['Gíralo para que el alambre de cobre toque el parche a 1 cm del centro','Lija ese punto y suelda el alambre al parche','Corta el alambre que sobre'],
+   warn:'Prueba: parche → reflector no debe pitar. Si pita, hay corto.'},
+  {title:'Monta el 2.º disco', show:s7, hi:['d54','n-d54'], view:'build',
+   text:['Ø 5,4 cm, a 1,2 cm del parche (2,3 cm del reflector).'],
+   list:['Tuerca, disco, tuerca','No lleva soldadura'],
+   warn:'Mide con calibrador antes de apretar.'},
+  {title:'Monta el director 1', show:s8, hi:['dir1','n-dir1'], view:'build',
+   text:['Ø 3,8 cm, a 3,2 cm del 2.º disco (5,5 cm del reflector).'], list:['Tuerca, disco, tuerca']},
+  {title:'Monta los directores 2, 3 y 4', show:s9, hi:['dir2','n-dir2','dir3','n-dir3','dir4','n-dir4'], view:'build',
+   text:['Los tres de Ø 3,7 cm, separados 2,8 cm entre sí.'],
+   list:['Director 2: 8,3 cm del reflector','Director 3: 11,1 cm','Director 4: 13,9 cm'],
+   warn:'Revisa que todos los discos queden planos y paralelos.'},
+  {title:'Conecta y prueba', show:null, hi:['usb'], view:'iso',
+   text:['Enrosca la base blanca al TL-WN722N, o pon en medio la extensión RP-SMA de 1 m.'],
+   list:['Extensión USB de 2–3 m hasta el portátil','Monta la antena en el trípode','Escanea redes y compara con lo que daba el cable pelado, sin antena','Mide a 5, 10, 15 y 20 m y girando de a 45°']}
+];
+const STEP_LAST_V2={title:'Conecta al router y mide', show:null, hi:['router','xcable'], view:'v2',
+   text:['Quita una antena del router y enrosca en ese conector la extensión RP-SMA. La otra punta va a la base blanca de la Pu-36. Sin extensión, la base se enrosca directo al router.'],
+   list:['Mide primero con la antena original del router en ese conector y después con la Pu-36 en el mismo conector','Celular o portátil a 5, 10, 15 y 20 m, 3 veces cada punto','Gira la Pu-36 de a 45° sin mover el celular','Deja las demás antenas del router puestas, igual en todas las pruebas'],
+   warn:'Antes, revisa que el router tenga antenas desenroscables RP-SMA. Si son fijas, hay que soldar el coaxial dentro del router.'};
+const stepNum=document.getElementById('stepNum'), stepTitle=document.getElementById('stepTitle'), stepBody=document.getElementById('stepBody');
+const prevB=document.getElementById('prev'), nextB=document.getElementById('next'), allB=document.getElementById('all'), dotsEl=document.getElementById('dots');
+STEPS.forEach((s,i)=>{const li=document.createElement('li');const b=document.createElement('button');b.type='button';b.textContent=i+1;b.title=s.title;b.addEventListener('click',()=>goStep(i));li.appendChild(b);dotsEl.appendChild(li);});
+function keyOf(m){return m.userData.part==='nuts'?'n-'+m.userData.disc:(m.userData.sub||m.userData.part);}
+let stepIdx=-1, anim=null;
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function paintIntro(){
+  stepNum.textContent='Montaje paso a paso'; stepTitle.textContent='Antena completa';
+  stepBody.textContent=''; const p=document.createElement('p');
+  p.textContent=STEPS.length+' pasos, del corte de los discos a la prueba final.'+(ver===2?' El último paso es la conexión al router.':' El último paso es la conexión al adaptador USB.')+' En cada paso aparecen solo las piezas que van hasta ese momento y la nueva se resalta.';
+  stepBody.appendChild(p);
+  prevB.disabled=true; nextB.textContent='Empezar →'; allB.hidden=true;
+  dotsEl.querySelectorAll('button').forEach(b=>{b.classList.remove('done');b.setAttribute('aria-current','false');b.setAttribute('aria-pressed','false');});
+}
+function goStep(i){
+  if(selected){selected=null;listEl.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));showDetail(null);}
+  stepIdx=i; const s=(i===STEPS.length-1&&ver===2)?STEP_LAST_V2:STEPS[i];
+  allMeshes.forEach(m=>{m.visible=(!s.show||s.show.includes(keyOf(m)))&&verOK(m);});
+  applyLook(s.hi);
+  exInput.value=s.ex||0;
+  Object.values(groups).forEach(g=>{g.userData.off=0;g.userData.offStart=0;});
+  if(!reduceMotion && i>0){ s.hi.forEach(k=>{ if(groups[k]) groups[k].userData.offStart=40; }); anim=performance.now(); }
+  applyExplode(+exInput.value);
+  setView(s.view);
+  setLabels(s.labels);
+  stepNum.textContent='Paso '+(i+1)+' de '+STEPS.length; stepTitle.textContent=s.title;
+  stepBody.textContent='';
+  s.text.forEach(t=>{const p=document.createElement('p');p.textContent=t;stepBody.appendChild(p);});
+  if(s.list){const ul=document.createElement('ul');s.list.forEach(t=>{const li=document.createElement('li');li.textContent=t;ul.appendChild(li);});stepBody.appendChild(ul);}
+  if(s.warn){const w=document.createElement('div');w.className='warn';w.textContent=s.warn;stepBody.appendChild(w);}
+  prevB.disabled=false; nextB.textContent= i===STEPS.length-1?'Terminar ✓':'Siguiente →'; allB.hidden=false;
+  dotsEl.querySelectorAll('button').forEach((b,j)=>{b.classList.toggle('done',j<i);b.setAttribute('aria-pressed',String(j===i));});
+}
+exitSteps=function(){
+  if(stepIdx===-1) return;
+  stepIdx=-1; anim=null;
+  allMeshes.forEach(m=>{m.visible=verOK(m);}); applyLook([]);
+  Object.values(groups).forEach(g=>{g.userData.off=0;g.userData.offStart=0;});
+  exInput.value=0; applyExplode(0); setLabels(overview()); paintIntro();
+};
+nextB.addEventListener('click',()=>{ if(stepIdx<STEPS.length-1) goStep(stepIdx+1); else {exitSteps(); setView(ver===2?'v2':'over1');} });
+prevB.addEventListener('click',()=>{ if(stepIdx>0) goStep(stepIdx-1); else {exitSteps(); setView(ver===2?'v2':'over1');} });
+allB.addEventListener('click',()=>{exitSteps(); setView(ver===2?'v2':'over1');});
+const xrayB=document.getElementById('xray');
+xrayB.addEventListener('click',()=>{xray=!xray; xrayB.setAttribute('aria-pressed',String(xray)); if(stepIdx>=0) applyLook(STEPS[stepIdx].hi); else if(selected) setHighlight(selected); else applyLook([]);});
+paintIntro();
+
+// Etiquetas de la vista general
+let labelsOn=true;
+const xMid=xCurve.getPoint(0.42);
+const OV={
+  1:[
+    {t:'Reflector · Ø9 cm', p:[0,-42,8], dy:25, dx:-150},
+    {t:'Parche · Ø6,8 (elemento activo)', p:[11,-32,6], dy:75, dx:-110},
+    {t:'2.º disco · Ø5,4', p:[23,-26,4], dy:120, dx:20},
+    {t:'Director 1 · Ø3,8', p:[55,-19,0], dy:70, dx:70},
+    {t:'Directores 2–4 · Ø3,7', p:[111,-18.5,0], dy:45, dx:70},
+    {t:'Varilla 1/4"', p:[149,0,0], dy:-55, dx:-5},
+    {t:'Tuercas · 2 por disco', p:[83,6.4,3], dy:-70, dx:10},
+    {t:'Base blanca · RP-SMA macho', p:[-37,FY+24,0], dy:-60, dx:-80},
+    {t:'Adaptador TL-WN722N', p:[-30,FY+56,0], dy:-15, dx:140}
+  ],
+  2:[
+    {t:'Antena Pu-36', p:[70,20,0], dy:-60, dx:40},
+    {t:'Base blanca · RP-SMA macho', p:[-37,FY+28,0], dy:70, dx:70},
+    {t:'Extensión RP-SMA · ≤ 1 m', p:[xMid.x,xMid.y,xMid.z], dy:-55, dx:0},
+    {t:'Conector RP-SMA del router', p:[PX,RY+25,-55], dy:60, dx:-90},
+    {t:'Antena original del router (se queda)', p:[PX,RY+170,55], dy:-25, dx:-120},
+    {t:'Router', p:[RX+40,RY-13,70], dy:45, dx:40}
+  ]
+};
+function overview(){return labelsOn?OV[ver]:null;}
+const tagsB=document.getElementById('tags');
+tagsB.addEventListener('click',()=>{labelsOn=!labelsOn; tagsB.setAttribute('aria-pressed',String(labelsOn)); if(stepIdx<0) setLabels(overview());});
+
+// Cambio de versión
+const eyebrowEl=document.getElementById('eyebrow');
+const verBtns=document.querySelectorAll('[data-ver]');
+function setVersion(v){
+  ver=v;
+  verBtns.forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.ver===v)));
+  eyebrowEl.textContent= v===2 ? 'Grupo 2 · Versión 2: conectada al router por coaxial · 2,4 GHz' : 'Grupo 2 · Versión 1: adaptador USB TL-WN722N · 2,4 GHz';
+  listEl.querySelectorAll('li').forEach(li=>{li.hidden=!!li.dataset.ver && li.dataset.ver!==String(v);});
+  if(selected){selected=null;listEl.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));showDetail(null);}
+  if(stepIdx>=0){ goStep(stepIdx); }
+  else { allMeshes.forEach(m=>{m.visible=verOK(m);}); applyLook([]); paintIntro(); setView(v===2?'v2':'over1'); setLabels(overview()); }
+  try{ const h=v===2?'#version-2':'#version-1'; if(location.hash!==h) history.replaceState(null,'',h); }catch(e){}
+}
+verBtns.forEach(b=>b.addEventListener('click',()=>setVersion(+b.dataset.ver)));
+setVersion(location.hash==='#version-2'?2:1);
+addEventListener('hashchange',()=>setVersion(location.hash==='#version-2'?2:1));
+
+function resize(){const w=viewer.clientWidth,h=viewer.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(viewer); resize();
+(function loop(now){
+  requestAnimationFrame(loop);
+  if(anim!==null){
+    const k=Math.min(1,(now-anim)/700), e=1-Math.pow(1-k,3);
+    Object.values(groups).forEach(g=>{ if(g.userData.offStart) g.userData.off=g.userData.offStart*(1-e); });
+    applyExplode(+exInput.value);
+    if(k>=1) anim=null;
+  }
+  controls.update(); renderer.render(scene,camera); updateLabels();
+})(performance.now());
+})();
+</script>
+
+</html>
