@@ -30,6 +30,7 @@ No se guardan los nombres de las redes vecinas: solo la red de prueba, y se pued
 | Fecha | Sesión | Resultado |
 |---|---|---|
 | 2026-11-19 | [Cable pelado contra antena original](2026-11-19_cable-pelado-vs-antena-original/) | La antena original capta muchísimo más; el vivo solo capta muy poco |
+| 2026-11-21 | [Alambre de cobre soldado al vivo](2026-11-21_alambre-de-cobre-soldado/) | El empalme conduce; sin tocar, ≈ −50 dBm y estable. Valor a superar por Pu-36 |
 
 ## Script de medición
 

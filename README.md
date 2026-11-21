@@ -42,7 +42,8 @@ Pu-36/
 ├── pruebas/
 │   ├── README.md           Cómo registrar una prueba
 │   ├── plantilla_mediciones.csv
-│   └── 2026-11-19_cable-pelado-vs-antena-original/
+│   ├── 2026-11-19_cable-pelado-vs-antena-original/
+│   └── 2026-11-21_alambre-de-cobre-soldado/
 └── herramientas/
     └── medir.py            Script para medir la señal con un adaptador USB (Linux)
 ```
@@ -53,7 +54,7 @@ Pu-36/
 |---|---|
 | Diseño y medidas | Listo, comparado con el plano del video |
 | Modelo 3D | Listo, con montaje paso a paso y dos versiones de conexión |
-| Cable de alimentación | Pelado y alargado con alambre de cobre |
+| Cable de alimentación | Pelado, alargado con alambre de cobre y medido el 21/11/2026 |
 | Corte de discos | Pendiente |
 | Montaje | Pendiente |
 | Prueba de referencia (cable pelado contra antena original) | Hecha el 19/11/2026 |

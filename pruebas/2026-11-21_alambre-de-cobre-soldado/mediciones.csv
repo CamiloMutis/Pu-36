@@ -1,0 +1,14 @@
+fecha,hora,configuracion,equipo,escaneo,red,canal,senal_pct,dbm_aprox,redes_vistas
+2026-11-21,12:48:04,alambre_soldado,tl-wn722n,1,red_prueba,1,72,-57,35
+2026-11-21,12:48:07,alambre_soldado,tl-wn722n,2,red_prueba,1,95,-43,34
+2026-11-21,12:48:10,alambre_soldado,tl-wn722n,3,red_prueba,1,89,-47,37
+2026-11-21,12:48:13,alambre_soldado,tl-wn722n,4,red_prueba,1,9,-95,40
+2026-11-21,12:48:16,alambre_soldado,tl-wn722n,5,red_prueba,1,72,-57,42
+2026-11-21,12:54:03,alambre_soldado_quieto,tl-wn722n,1,red_prueba,1,75,-55,37
+2026-11-21,12:54:06,alambre_soldado_quieto,tl-wn722n,2,red_prueba,1,89,-47,45
+2026-11-21,12:54:09,alambre_soldado_quieto,tl-wn722n,3,red_prueba,1,89,-47,46
+2026-11-21,12:54:11,alambre_soldado_quieto,tl-wn722n,4,red_prueba,1,82,-51,50
+2026-11-21,12:54:14,alambre_soldado_quieto,tl-wn722n,5,red_prueba,1,82,-51,52
+2026-11-21,12:54:17,alambre_soldado_quieto,tl-wn722n,6,red_prueba,1,82,-51,52
+2026-11-21,12:54:20,alambre_soldado_quieto,tl-wn722n,7,red_prueba,1,82,-51,52
+2026-11-21,12:54:23,alambre_soldado_quieto,tl-wn722n,8,red_prueba,1,89,-47,53
